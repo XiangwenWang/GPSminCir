@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 '''
 @Author: Xiangwen Wang
-@Version: 1.0
-@Description: A tool to calculate the radius of the smallest circle that covers the given GPS track.
+@Version: 1.0.1
+@Description: A tool to calculate the radius of the smallest circle which covers the given GPS track.
 @Input: [[lat1, lon1], [lat2, lon2], [lat3, lon3], ...]
-@Output: (O, r), where O and r are respectively the position and the ridius of the smllest circle.
+@Output: (O, r), where O and r are respectively the position and the radius of the smallest circle.
 '''
 
 import math
