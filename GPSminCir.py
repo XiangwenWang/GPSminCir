@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 @Author: Xiangwen Wang
-@Version: 1.0.1
+@Version: 1.0.3
 @Description: A tool to calculate the radius of the smallest circle which covers the given GPS track.
 @Input: [[lat1, lon1], [lat2, lon2], [lat3, lon3], ...]
 @Output: (O, r), where O and r are respectively the position and the radius of the smallest circle.
@@ -9,6 +9,7 @@
 
 import math
 import random
+from functools import reduce
 
 
 def distance(A, B):
@@ -53,7 +54,7 @@ def VectorLen(a):
 
 def CalLatLon(P):
     x, y, z = P
-    curr_R = VectorLen(P)
+    curr_R = VectorLen((x, y, z))
     lat_rad = math.asin(z / curr_R)
     lon_rad = math.atan2(y, x)
     lat = math.degrees(lat_rad)
@@ -63,7 +64,7 @@ def CalLatLon(P):
 
 def findMidEdge(pointpair):
     P1, P2 = pointpair
-    P = map(lambda x, y: (x + y) / 2.0, P1, P2)
+    P = list(map(lambda x, y: (x + y) / 2.0, P1, P2))
     return CalLatLon(P)
 
 
@@ -75,19 +76,19 @@ def Cir2Pts(A_s, B_s):
 
 
 def VectorPlus(a, b):
-    return map(lambda x, y: x + y, a, b)
+    return [x + y for x, y in zip(a, b)]
 
 
 def VectorMinus(a, b):
-    return map(lambda x, y: x - y, a, b)
+    return [x - y for x, y in zip(a, b)]
 
 
 def VectorTimesScaler(a, k):
-    return map(lambda x: x * k, a)
+    return [x * k for x in a]
 
 
 def VectorDivScaler(a, k):
-    return map(lambda x: x / k, a) if k else []
+    return [x / k for x in a] if k else []
 
 
 def VectorCross(a, b):
@@ -105,11 +106,10 @@ def Print_outlier(data, mincircle):
     NoError = True
     for i in data:
         if not InCircle(i, mincircle):
-            print distance(i, mincircle[0]),
-            # print i,
+            print(distance(i, mincircle[0]))
             NoError = False
     if not NoError:
-        print '\n%.2f\n' % mincircle[1]
+        print('\n%.2f\n' % mincircle[1])
 
 
 def MinCirTri(A_s, B_s, C_s):
@@ -125,7 +125,6 @@ def MinCirTri(A_s, B_s, C_s):
         P = VectorPlus(P1, C)
         O = CalLatLon(P)
         r = distance(O, A_s)
-        # print '%.2f %.2f %.2f   %.2f' % (distance(A_s, O), distance(B_s, O), distance(C_s, O), r)
     else:
         dist_ABC = (distance(A_s, B_s), distance(B_s, C_s), distance(C_s, A_s))
         dia_edge = FindDiaEdge(dist_ABC)
@@ -143,40 +142,35 @@ def InCircle(A, minimum_circle):
 def MinCir_2PtsKnown(data_piece2):
     minimum_circle2 = Cir2Pts(data_piece2[-2], data_piece2[-1])
     all_in_circle = True
-    for i in xrange(0, len(data_piece2) - 2):
+    for i in range(0, len(data_piece2) - 2):
         if not InCircle(data_piece2[i], minimum_circle2):
             all_in_circle = False
             break
     if all_in_circle:
         return minimum_circle2
     farthest = [minimum_circle2, 0]
-    for i in xrange(0, len(data_piece2) - 2):
+    for i in range(0, len(data_piece2) - 2):
         if InCircle(data_piece2[i], minimum_circle2):
             continue
         curr_circle = MinCirTri(data_piece2[i], data_piece2[-2], data_piece2[-1])
         dist_pt_line = distance(curr_circle[0], minimum_circle2[0])
         if dist_pt_line > farthest[1]:
-                farthest = (curr_circle, dist_pt_line)
+            farthest = (curr_circle, dist_pt_line)
     minimum_circle2 = farthest[0]
     Print_outlier(data_piece2, minimum_circle2)
-    # print data_piece2[-2], data_piece2[-1]
     return minimum_circle2
 
 
 def MinCir_1PtKnown(data_piece1):
     minimum_circle1 = Cir2Pts(data_piece1[0], data_piece1[-1])
-    for i in xrange(1, len(data_piece1) - 1):
+    for i in range(1, len(data_piece1) - 1):
         if not InCircle(data_piece1[i], minimum_circle1):
             minimum_circle1 = MinCir_2PtsKnown(data_piece1[0: i + 1] + data_piece1[-1:])
-            # print data_piece1[i], data_piece1[-1], minimum_circle1
-            # Print_outlier(data_piece1[0: i + 1] + data_piece1[-1:], minimum_circle1)
-    # Print_outlier(data_piece1, minimum_circle1)
     return minimum_circle1
 
 
 def MinCir(data):
     data = reduce(lambda x, y: x if y in x else x + [y], [[], ] + data)
-    # print len(data)
     data_num = len(data)
     if not data_num:
         return ((0.0, 0.0), 0.0)
@@ -185,9 +179,8 @@ def MinCir(data):
     elif data_num == 2:
         return Cir2Pts(data[0], data[1])
     random.shuffle(data)
-    # print data
     minimum_circle = Cir2Pts(data[0], data[1])
-    for i in xrange(2, data_num):
+    for i in range(2, data_num):
         if not InCircle(data[i], minimum_circle):
             minimum_circle = MinCir_1PtKnown(data[0: i + 1])
     Print_outlier(data, minimum_circle)
@@ -212,5 +205,5 @@ if __name__ == '__main__':
                 [51.769308, -0.000310], [51.769620, 0.0006250], [51.768848, 0.0016750],
                 [51.767821, 0.0012530], [51.767273, -0.000255], [51.765855, -0.000191],
                 [51.764588, -0.002303], [51.764640, -0.003210], [51.764971, -0.002791]]
-    print MinCir(GPSpairs)
+    print(MinCir(GPSpairs))
     # ((51.7682065260781, -0.005385086275948437), 491.02609034476205)
